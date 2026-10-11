@@ -12,4 +12,6 @@ Start a new save. Click the orange cube-and-gear icon in the colony toolbar. Add
 Remove
 Save, disable the mod in Mod Manager, and restart. Added piles and deposits remain as native objects. Removed resources are not restored.
 
+The source is https://github.com/hawshemi/surviving-mars-mods.
+
 The MIT license is included in LICENSE.

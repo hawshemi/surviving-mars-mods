@@ -12,4 +12,6 @@ Choose Normal, 2x, 5x, 10x, or Custom in Mod Options. The default is 2x. Presets
 Remove
 In a loaded colony, select Normal and apply. Save, disable the mod in Mod Manager, and restart. Existing safari routes remain unchanged.
 
+The source is https://github.com/hawshemi/surviving-mars-mods.
+
 The MIT license is included in LICENSE.

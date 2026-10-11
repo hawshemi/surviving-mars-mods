@@ -12,4 +12,6 @@ Choose Normal, 2x, 5x, 10x, or Custom in Mod Options. The default is Normal. Pre
 Remove
 In a loaded colony, select Normal and apply. Unload cargo, drain excess storage, reduce fleets, or wait for visitors to leave until there are no pending reductions. Save, disable the mod in Mod Manager, and restart.
 
+The source is https://github.com/hawshemi/surviving-mars-mods.
+
 The MIT license is included in LICENSE.
