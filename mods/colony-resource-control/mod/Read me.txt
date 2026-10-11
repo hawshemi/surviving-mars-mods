@@ -1,0 +1,15 @@
+Colony Resource Control
+
+Add and remove resource piles, deposits, and stored resources in Surviving Mars: Relaunched. By hawshemi.
+Version 1.00-003.
+
+Install
+Copy this folder into your local mod folder for ColonyResourceControl. Enable it in Mod Manager and restart. Start a new save.
+
+Use
+Start a new save. Click the orange cube-and-gear icon in the colony toolbar. Add piles, underground deposits, scattered deposits, or concrete patches. Choose a resource and amount, then click clear, flat ground. Choose Remove to take resources from piles, deposits, depots, buildings, or carriers. Removal stops at zero.
+
+Remove
+Save, disable the mod in Mod Manager, and restart. Added piles and deposits remain as native objects. Removed resources are not restored.
+
+The MIT license is included in LICENSE.

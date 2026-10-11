@@ -1,0 +1,15 @@
+Colony Range Control
+
+Adjust 17 colony ranges from 1x to 10x in Surviving Mars: Relaunched. By hawshemi.
+Version 1.01-012.
+
+Install
+Copy this folder into your local mod folder for LocalRangeExtender. Enable it in Mod Manager and restart. Use a separate test save for the latest changes.
+
+Use
+Choose Normal, 2x, 5x, 10x, or Custom in Mod Options. The default is 2x. Presets set all 17 sliders. Changing a slider selects Custom and keeps the other values. Apply to update colony ranges and view the range report. Larger heater and scrubber ranges still use more power.
+
+Remove
+In a loaded colony, select Normal and apply. Save, disable the mod in Mod Manager, and restart. Existing safari routes remain unchanged.
+
+The MIT license is included in LICENSE.
