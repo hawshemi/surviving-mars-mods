@@ -1,17 +1,41 @@
 Colony Range Control
 
-Adjust 17 colony ranges from 1x to 10x in Surviving Mars: Relaunched. By hawshemi.
-Version 1.00-001.
+Adjust 17 colony ranges from 1x to 10x in Surviving Mars: Relaunched.
+
+Version 1.1 (1.01-002). By hawshemi.
 
 Install
-Copy this folder into your local mod folder for LocalRangeExtender. Enable it in Mod Manager and restart. Use a separate test save for the latest changes.
+Copy this folder into %APPDATA%\Surviving Mars Relaunched\Mods\LocalRangeExtender. Enable the mod in Mod Manager and restart the game. Use a separate test save.
 
 Use
-Choose Normal, 2x, 5x, 10x, or Custom in Mod Options. The default is 2x. Presets set all 17 sliders. Changing a slider selects Custom and keeps the other values. Apply to update colony ranges and view the range report. Larger heater and scrubber ranges still use more power.
+Choose Normal, 2x, 5x, 10x, or Custom in Mod Options. Normal is the default. Presets set every slider. Changing one slider selects Custom. Apply to update your colony.
+
+Options
+- Range preset
+- Dome and station range
+- Drone Hub range
+- RC Commander range
+- Rocket drone range
+- Drone Hub Extender range
+- Scrubber range
+- Heater range
+- Meteor laser range
+- Extractor deposit range
+- Sensor scanning reach
+- Artificial Sun range
+- Underground support range
+- Safari attraction range
+- Safari route length
+- Forestation Plant range
+- Mohole heat range
+- Advanced Stirling heat range
+
+Limits
+Larger heater and scrubber ranges use more power.
 
 Remove
-In a loaded colony, select Normal and apply. Save, disable the mod in Mod Manager, and restart. Existing safari routes remain unchanged.
+Select Normal and apply in a loaded colony. Save, disable the mod in Mod Manager, and restart. Existing safari routes stay unchanged.
 
-The source is https://github.com/hawshemi/surviving-mars-mods.
-
+Source: https://github.com/hawshemi/surviving-mars-mods
+Paradox Mods: https://mods.paradoxplaza.com/mods/160315/Any
 The MIT license is included in LICENSE.

@@ -2,9 +2,9 @@
 
 ![Colony Resource Control for Surviving Mars: Relaunched](mod/preview.jpg)
 
-Add and remove resource piles, deposits, and stored resources in Surviving Mars: Relaunched. By hawshemi.
+Add and remove resource piles, deposits, and stored resources in Surviving Mars: Relaunched.
 
-Version 1.00-001. [Paradox Mods](https://mods.paradoxplaza.com/mods/162198/Any) [All three mods](../../README.md).
+Version 1.1 (`1.01-002`). By hawshemi.
 
 ## Install
 
@@ -12,22 +12,26 @@ Copy the contents of `mod` into `%APPDATA%\Surviving Mars Relaunched\Mods\Colony
 
 ## Use
 
-Start a new save. Click the orange cube-and-gear icon in the colony toolbar. Add piles, underground deposits, scattered deposits, or concrete patches. Choose a resource and amount, then click clear, flat ground. Choose Remove to take resources from piles, deposits, depots, buildings, or carriers. Removal stops at zero.
+Start a new save. Click the cube-and-gear icon in the colony toolbar. Choose Add or Remove. Choose a resource and amount when prompted. Place additions on clear, flat ground. Right-click or press Escape to finish.
 
-## Included controls
+## Options
 
-Click the orange cube-and-gear icon in the colony toolbar. Choose **Add**, then **Pile**, **Underground deposit**, **Scattered deposit**, or **Concrete patch**. Choose the resource and a positive whole amount. Choose grade and depth when offered. Click clear, flat ground to place it. Keep clicking to place more. Right-click or press Escape to finish.
+- Pile: add collectible resource piles.
+- Underground deposit: add water or mineral deposits.
+- Scattered deposit: add surface resource deposits.
+- Concrete patch: add terrain for concrete extraction.
+- Remove: subtract resources from piles, deposits, depots, buildings, or carriers.
+- Resource and amount: choose the resource and a positive whole amount.
+- Grade and depth: choose deposit quality and depth when offered.
 
-Choose **Remove**, click a pile, deposit, depot, building, or carrier, then choose the resource and amount. Removal stops at zero. Removing 1,000 units from an available 100 leaves zero.
+## Limits
 
-Spawning works without research checks. Normal collection and extraction rules still apply. Scattered exotic minerals can be collected by drones and RC Transports. Underground exotic mineral deposits on Mars need a compatible extractor from another mod. Water is available as a deposit.
+Removal stops at zero. Native collection and extraction rules still apply. Underground exotic minerals on Mars need a compatible extractor from another mod.
 
 ## Remove
 
-Save, disable the mod in Mod Manager, and restart. Added piles and deposits remain as native objects. Removed resources are not restored.
+Save, disable the mod in Mod Manager, and restart. Added piles and deposits remain. Removed resources are not restored.
 
-## Validation
+## Links
 
-Automated checks use the Relaunched ModTools source at Lua revision 403908. They simulate engine services. Gameplay verification of the latest changes remains pending. See [development and packaging](../../DEVELOPMENT.md) for the shared check command.
-
-[MIT license](LICENSE).
+[Source](https://github.com/hawshemi/surviving-mars-mods) | [All three mods](../../README.md) | [MIT license](LICENSE) | [Paradox Mods](https://mods.paradoxplaza.com/mods/162198/Any)
