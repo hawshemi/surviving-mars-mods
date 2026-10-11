@@ -107,6 +107,11 @@ l.globals().all_items = l.execute((root/'items.lua').read_text(encoding='utf-8')
 l.execute('option_items={} for i=2,#all_items do option_items[#option_items+1]=all_items[i] end CurrentModOptions=mod_options({})')
 l.execute((root/'Code/Ranges.lua').read_text(encoding='utf-8'))
 l.execute('''
+assert(CurrentModOptions:GetProperty("Preset")=="Normal")
+for _,prop in ipairs(CurrentModOptions:GetProperties()) do
+ if prop.editor=="number" then assert(CurrentModOptions:GetProperty(prop.id)==1) end
+end
+SetProperty(CurrentModOptions,"Preset","2x")
 g_Consts=node("Consts",{DefaultOutsideWorkplacesRadius=20,base_DefaultOutsideWorkplacesRadius=20})
 g_Consts:SetModifier("DefaultOutsideWorkplacesRadius","LocalDomeRange10x",0,900)
 hub=node("DroneHubBase",{work_radius=35,service_area_max=35,base_service_area_max=35})
@@ -162,25 +167,25 @@ assert(const.CommandCenterMaxRadius==50 and const.SensorTowerScanBoostMaxRange==
 assert(g_Classes.SubsurfaceHeaterBase.properties[1].max==15)
 CurrentModOptions=mod_options({})
 OnMsg.ApplyModOptions(CurrentModId) flush()
-assert(rc.work_radius==40 and g_Consts.DefaultOutsideWorkplacesRadius==40)
+assert(rc.work_radius==20 and g_Consts.DefaultOutsideWorkplacesRadius==20)
 local newhub=node("DroneHubBase",{work_radius=35,service_area_max=35,base_service_area_max=35})
 DefineClass.LocalRangeExtenderObject.GameInit(newhub)
-assert(newhub.work_radius==35) flush() assert(newhub.work_radius==70)
+assert(newhub.work_radius==35) flush() assert(newhub.work_radius==35)
 local definitions={}
 for _,name in ipairs({"ForestationPlantBase","MoholeMineBase","AdvancedStirlingGeneratorBase","DroneNode","RangeElConsumer","MDSLaserBase","BuildingDepositExploiterComponent","ArtificialSunBase","SupportStruts","RCSafari","DroneHubBase","RCRover","RocketBase","UniversalRocket","DroneHubExtenderBase"}) do definitions[name]={__parents={"Object"}} end
 definitions.DroneHubBase.GetSelectionRadiusScale=function(self) return self.work_radius end
 definitions.BuildingDepositExploiterComponent.GatherNearbyDeposits=function(self) self.preview_radius=self.exploitation_radius end
 OnMsg.ClassesGenerate(definitions)
 assert(definitions.DroneNode.__parents[2]=="LocalRangeExtenderObject")
-assert(definitions.DroneHubBase.GetSelectionRadiusScale({work_radius=35})==70)
-assert(definitions.DroneHubBase.GetSelectionRadiusScale(newhub)==70)
+assert(definitions.DroneHubBase.GetSelectionRadiusScale({work_radius=35})==35)
+assert(definitions.DroneHubBase.GetSelectionRadiusScale(newhub)==35)
 local preview={exploitation_radius=4}
 definitions.BuildingDepositExploiterComponent.GatherNearbyDeposits(preview)
-assert(preview.preview_radius==8 and preview.exploitation_radius==4)
+assert(preview.preview_radius==4 and preview.exploitation_radius==4)
 definitions.BuildingDepositExploiterComponent.GatherNearbyDeposits(extractor)
-assert(extractor.preview_radius==8 and extractor.exploitation_radius==8)
+assert(extractor.preview_radius==4 and extractor.exploitation_radius==4)
 ''')
-print('Passed syntax, all 14 settings, independent overrides, real game modifier/radius methods, legacy migration, repeat loads, new units, slider limits, Normal restore, and class hooks')
+print('Passed syntax, Normal defaults, independent overrides, real game modifier/radius methods, legacy migration, repeat loads, new units, slider limits, Normal restore, and class hooks')
 print('Engine maps and UI are stubbed. Full in-game verification remains.')
 
 l.execute('''
@@ -231,7 +236,7 @@ print('Passed new range settings, preset synchronization, cache invalidation, he
 l.execute('''
 local options=mod_options({})
 assert(options:GetProperty("Enabled")==nil)
-for _,preset in ipairs({"Normal","5x","10x","2x"}) do
+for _,preset in ipairs({"5x","Normal","10x","2x"}) do
  SetProperty(options,"Preset",preset)
  local factor=preset=="Normal" and 1 or tonumber(preset:sub(1,-2))
  local count=0
@@ -250,7 +255,7 @@ for _,prop in ipairs(options:GetProperties()) do original:SetProperty(prop.id,op
 local host={mod=options.__mod,ResolveId=function() return {context=original} end}
 SetProperty(options,"Heaters",9) SetProperty(options,"Preset","10x")
 CancelModOptions(host) assert(options.Preset=="5x" and options.Heaters==5 and options.Hubs==5)
-ResetModOptions(host) assert(options.Preset=="2x" and options.Hubs==2 and options.Heaters==2)
+ResetModOptions(host) assert(options.Preset=="Normal" and options.Hubs==1 and options.Heaters==1)
 CurrentModOptions=mod_options({Preset="5x",Hubs=3,Heaters=1})
 OnMsg.ApplyModOptions(CurrentModId) flush()
 assert(CurrentModOptions.Hubs==5 and CurrentModOptions.Heaters==5)

@@ -55,8 +55,10 @@ for order in (list(mods), list(reversed(mods))):
         items = lua.execute((path / 'items.lua').read_text(encoding='utf-8'))
         options[mod_id] = lua.globals().make_options(items, mod_id)
     for mod_id, obj in options.items():
-        lua.globals().SetProperty(obj, 'Preset', '5x')
         fields = [meta['id'] for _, meta in obj['properties'].items() if meta['editor'] == 'number']
+        assert lua.globals().ModOptionsObject.GetProperty(obj, 'Preset') == 'Normal'
+        assert all(lua.globals().ModOptionsObject.GetProperty(obj, field) == 1 for field in fields)
+        lua.globals().SetProperty(obj, 'Preset', '5x')
         assert len(fields) == (17 if mod_id == 'LocalRangeExtender' else 38)
         assert all(obj[field] == 5 for field in fields)
         lua.globals().SetProperty(obj, fields[0], 7)

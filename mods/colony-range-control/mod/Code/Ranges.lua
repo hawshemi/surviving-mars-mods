@@ -3,14 +3,14 @@ LocalRangeExtenderActive = true
 local id = "LocalRangeExtender"
 local presets = {Normal = 1, ["2x"] = 2, ["5x"] = 5, ["10x"] = 10}
 local defaults = {
-    Domes = 2, Hubs = 2, Commanders = 2, Rockets = 2, Extenders = 2,
-    Scrubbers = 2, Heaters = 2, Lasers = 2, Extractors = 2, Sensors = 2,
-    Forestation = 2, Mohole = 2, Stirling = 2, Suns = 2, Struts = 2, SafariSights = 2, SafariRoutes = 2,
+    Domes = 1, Hubs = 1, Commanders = 1, Rockets = 1, Extenders = 1,
+    Scrubbers = 1, Heaters = 1, Lasers = 1, Extractors = 1, Sensors = 1,
+    Forestation = 1, Mohole = 1, Stirling = 1, Suns = 1, Struts = 1, SafariSights = 1, SafariRoutes = 1,
 }
 
 local function Factor(key)
     local options = CurrentModOptions or empty_table
-    local preset = presets[options.Preset or "2x"]
+    local preset = presets[options.Preset or "Normal"]
     return Clamp(preset or tonumber(options[key]) or defaults[key], 1, 10)
 end
 

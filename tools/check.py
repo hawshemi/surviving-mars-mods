@@ -21,7 +21,7 @@ repo_url = 'https://github.com/hawshemi/surviving-mars-mods'
 identities = {
     'colony-range-control': ('LocalRangeExtender', 160315, 17),
     'colony-resource-control': ('ColonyResourceControl', 162198, 0),
-    'colony-capacity-control': ('ColonyCapacityControl', None, 38),
+    'colony-capacity-control': ('ColonyCapacityControl', 162850, 38),
 }
 for slug, (mod_id, listing_id, count) in identities.items():
     project = root / 'mods' / slug
@@ -31,6 +31,8 @@ for slug, (mod_id, listing_id, count) in identities.items():
     metadata = lua.execute((mod / 'metadata.lua').read_text(encoding='utf-8'))
     assert metadata['id'] == mod_id and metadata['author'] == 'hawshemi'
     assert metadata['pdx_id'] == listing_id
+    assert metadata['TagGameplay'] is True and metadata['TagTools'] is True
+    assert metadata['TagBuildings' if count else 'TagInterface'] is True
     assert list(metadata['external_links'].values()) == [repo_url]
     for field, limit in (('title', 60), ('short_description', 200), ('description', 8000)):
         assert 0 < len(metadata[field]) <= limit
@@ -39,17 +41,20 @@ for slug, (mod_id, listing_id, count) in identities.items():
     for document in (root / 'README.md', project / 'README.md', mod / 'Read me.txt'):
         assert version in document.read_text(encoding='utf-8'), document
     prefix = 'Mod/' + mod_id + '/'
+    registered_images = set()
     for field in ('image', 'screenshot1', 'screenshot2', 'screenshot3', 'screenshot4', 'screenshot5'):
         relative = metadata[field]
         if not relative:
             continue
         assert relative.startswith(prefix)
         asset = (mod / relative.removeprefix(prefix)).resolve()
+        registered_images.add(asset)
         assert asset.is_relative_to(mod) and asset.stat().st_size < 2 * 1024 * 1024
         with Image.open(asset) as image:
             if field == 'image':
                 assert image.format == 'JPEG' and image.size == (1280, 720)
             image.verify()
+    assert {path.resolve() for path in mod.glob('*.jpg')} == registered_images
     for _, relative in metadata['code'].items():
         assert (mod / relative).is_file()
     items = lua.execute((mod / 'items.lua').read_text(encoding='utf-8'))
@@ -58,6 +63,8 @@ for slug, (mod_id, listing_id, count) in identities.items():
     assert all(item['name'] != 'Enabled' for _, item in items.items())
     if count:
         assert list(items[2]['ChoiceList'].values()) == ['Normal', '2x', '5x', '10x', 'Custom']
+        assert items[2]['DefaultValue'] == 'Normal'
+        assert all(item['DefaultValue'] == 1 for item in numbers)
     for document in (project / 'LICENSE', mod / 'LICENSE'):
         assert document.read_text(encoding='utf-8') == (root / 'LICENSE').read_text(encoding='utf-8')
     print(f'{metadata["title"]}: {version}, metadata, assets, links, options and licenses passed.')

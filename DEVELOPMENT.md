@@ -27,4 +27,4 @@ Packages are written to `dist`. Each ZIP has one folder named after its mod ID. 
 
 This repository is the source of truth. Submit changes through a pull request. After merging, use the merged source for your local mod and Paradox upload.
 
-All three mods start at v1 (`1.00-001`). To update a version, edit `version_major`, `version_minor`, and `version` in that mod's `mod/metadata.lua`. Update the same version in the root README, the mod README, and `mod/Read me.txt`. Keep mod IDs, author, listing IDs, and publishing versions intact. Run the shared check before packaging.
+To update a version, edit `version_major`, `version_minor`, and `version` in that mod's `mod/metadata.lua`. Update the same version in the root README, the mod README, and `mod/Read me.txt`. Keep mod IDs, author, listing IDs, and publishing versions intact. Run the shared check before packaging.
