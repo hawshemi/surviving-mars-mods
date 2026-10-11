@@ -15,7 +15,7 @@ return PlaceObj('ModDef', {
     'version_major', 1,
     'version_minor', 0,
     'version', 1,
-    'last_changes', "Consistent presets, descriptions, and source information.",
+    'last_changes', "Initial v1 release.",
     'lua_revision', 403908,
     'saved_with_revision', 403908,
     'restart_on_unload', true,

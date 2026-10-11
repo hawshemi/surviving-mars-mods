@@ -4,7 +4,7 @@
 
 Add and remove resource piles, deposits, and stored resources in Surviving Mars: Relaunched. By hawshemi.
 
-Version 1.00-003. [Paradox Mods](https://mods.paradoxplaza.com/mods/162198/Any) [All three mods](../../README.md).
+Version 1.00-001. [Paradox Mods](https://mods.paradoxplaza.com/mods/162198/Any) [All three mods](../../README.md).
 
 ## Install
 
