@@ -26,7 +26,7 @@ assert metadata['author'] == 'hawshemi'
 assert metadata['id'] == 'ColonyResourceControl'
 assert metadata['version_major'] == 1
 assert metadata['version_minor'] == 0
-assert isinstance(metadata['version'], int) and metadata['version'] >= 3
+assert isinstance(metadata['version'], int) and metadata['version'] >= 1
 assert metadata['pdx_id'] == 162198 and metadata['pdx_version']
 assert list(metadata['external_links'].values()) == ['https://github.com/hawshemi/surviving-mars-mods']
 

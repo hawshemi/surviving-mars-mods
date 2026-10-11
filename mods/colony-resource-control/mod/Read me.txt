@@ -1,7 +1,7 @@
 Colony Resource Control
 
 Add and remove resource piles, deposits, and stored resources in Surviving Mars: Relaunched. By hawshemi.
-Version 1.00-003.
+Version 1.00-001.
 
 Install
 Copy this folder into your local mod folder for ColonyResourceControl. Enable it in Mod Manager and restart. Start a new save.

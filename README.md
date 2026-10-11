@@ -4,8 +4,8 @@ Three colony management mods by hawshemi. Control colony ranges, add or remove r
 
 | Mod | Version | What it changes | Paradox Mods |
 | --- | --- | --- | --- |
-| [Colony Range Control](mods/colony-range-control) | 1.01-012 | Adjust 17 colony ranges from 1x to 10x | [Subscribe](https://mods.paradoxplaza.com/mods/160315/Any) |
-| [Colony Resource Control](mods/colony-resource-control) | 1.00-003 | Add and remove resource piles, deposits, and stored resources | [Subscribe](https://mods.paradoxplaza.com/mods/162198/Any) |
+| [Colony Range Control](mods/colony-range-control) | 1.00-001 | Adjust 17 colony ranges from 1x to 10x | [Subscribe](https://mods.paradoxplaza.com/mods/160315/Any) |
+| [Colony Resource Control](mods/colony-resource-control) | 1.00-001 | Add and remove resource piles, deposits, and stored resources | [Subscribe](https://mods.paradoxplaza.com/mods/162198/Any) |
 | [Colony Capacity Control](mods/colony-capacity-control) | 1.00-001 | Adjust 38 colony capacities from 1x to 10x | Source package |
 
 ## Install
@@ -28,7 +28,7 @@ Before disabling Range Control or Capacity Control, select Normal and apply in a
 
 ## Versions and compatibility
 
-Each mod has its own version in the game's `major.minor-build` format. The version fields in its `mod/metadata.lua` are the source of truth. Existing mod IDs and Paradox listing IDs are preserved.
+This repository is the source of truth for all three mods. All start at v1, shown as `1.00-001` in the game's `major.minor-build` format. Each mod's version is defined in its `mod/metadata.lua`. Existing mod IDs and Paradox listing IDs are preserved.
 
 Automated checks inspect native methods from Relaunched Lua revision 403908. They simulate engine services. Gameplay verification of the latest changes remains pending. The range and capacity option hooks are checked together in both load orders.
 

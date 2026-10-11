@@ -1,7 +1,7 @@
 Colony Range Control
 
 Adjust 17 colony ranges from 1x to 10x in Surviving Mars: Relaunched. By hawshemi.
-Version 1.01-012.
+Version 1.00-001.
 
 Install
 Copy this folder into your local mod folder for LocalRangeExtender. Enable it in Mod Manager and restart. Use a separate test save for the latest changes.

@@ -4,7 +4,7 @@
 
 Adjust 17 colony ranges from 1x to 10x in Surviving Mars: Relaunched. By hawshemi.
 
-Version 1.01-012. [Paradox Mods](https://mods.paradoxplaza.com/mods/160315/Any) [All three mods](../../README.md).
+Version 1.00-001. [Paradox Mods](https://mods.paradoxplaza.com/mods/160315/Any) [All three mods](../../README.md).
 
 ## Install
 
