@@ -12,10 +12,16 @@ game = args.game_source / 'Lua'
 code = (args.mod / 'Code/Capacity.lua').read_text(encoding='utf-8')
 
 def method(path, name):
+    native_source = (game / path).read_text(encoding='utf-8')
     match = re.search(r'^function ' + re.escape(name) + r'\([^\n]*\).*?^end',
-                      (game / path).read_text(encoding='utf-8'), re.M | re.S)
+                      native_source, re.M | re.S)
     assert match, name
-    return match[0]
+    source = match[0]
+    if name == 'MechanizedDepotStockLane:CalculateResourceCubePos':
+        source = re.sub(r'(?<!/)/(?!/)', '//', source)
+    if name == 'MechanizedDepot:TryStore':
+        source = re.search(r'^local store_step = .*$', native_source, re.M)[0] + '\n' + source
+    return source
 
 setup = '''
 empty_table={} OnMsg={} DefineClass={} const={ResourceScale=1000} g_Classes={}
@@ -33,6 +39,7 @@ function Min(a,b) return math.min(a,b) end
 function Max(...) return math.max(...) end
 function Clamp(v,a,b) return math.max(a,math.min(v,b)) end
 function MulDivRound(a,b,c) return math.floor(a*b/c+0.5) end
+function sqrt(value) return math.floor(math.sqrt(value)) end
 function table.find_value(t,key,value) for _,v in ipairs(t or {}) do if v[key]==value then return v end end end
 function table.remove_entry(t,v) for i,x in ipairs(t) do if x==v then table.remove(t,i) return end end end
 function table.insert_unique(t,v) for _,x in ipairs(t) do if x==v then return end end t[#t+1]=v end
@@ -147,6 +154,21 @@ end
 function property(kinds,prop,value)
  local o=node(kinds,{[prop]=value,["base_"..prop]=value}) return o
 end
+function warehouse()
+ local o=property({"MechanizedDepot"},"max_storage_per_resource",3950000)
+ o.stockpiled_amount=0 o.stockpiles={{supply_request=request(0),demand_request=request(50000)}}
+ o.stock_lanes={}
+ for i=1,3 do
+  local lane=setmetatable({n=10,row_size=5,max_rows=i==1 and 27 or 26,row_adjustment=i==1 and 1 or 0,
+   stockpiled_amount=0,lane_idx=i,lane_pos=i-2,cubes={}}, {__index=MechanizedDepotStockLane})
+  for j=1,10 do lane.cubes[j]={count=0} end
+  lane.SetCountOnRow=function(s,row,count) s.cubes[row].count=count end
+  o.stock_lanes[i]=lane
+ end
+ for _,name in ipairs({"SetCount","FindStockLaneToGiveTo","FindStockLaneToTakeFrom","CraneGoToStock"}) do o[name]=MechanizedDepot[name] end
+ o.CraneGoToCubes=function(s,x,y,z) s.crane_depth=y s.crane_height=z end
+ return o
+end
 '''
 
 native = [
@@ -180,6 +202,16 @@ native = [
     ('Buildings/StorageDepot.lua', 'MechanizedDepot:FindStockLaneToGiveTo'),
     ('Buildings/StorageDepot.lua', 'MechanizedDepot:FindStockLaneToTakeFrom'),
     ('Buildings/StorageDepot.lua', 'MechanizedDepotStockLane:CalculateSearchOrder'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepotStockLane:CalculateResourceCubePos'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepotStockLane:CalculateResourceCubeRows'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepotStockLane:CalculateNextCubesPos'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepotStockLane:CalculateLastCubesPos'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepotStockLane:SetCount'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepot:CraneGoToStock'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepot:GetStoredAmount'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepot:TryStore'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepot:AddResourceAmount'),
+    ('Buildings/StorageDepot.lua', 'MechanizedDepot:BuildingDailyUpdate'),
     ('CargoTransporterNew.lua', 'CargoTransporterNew:GetCargoWeightCapacity'),
     ('City.lua', 'City:GetCargoWeightCapacity'),
     ('Buildings/ShuttleHub.lua', 'GetMaxCargoShuttleCapacity'),
@@ -189,14 +221,16 @@ class CapacityTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime()
         self.lua.execute(setup)
-        self.lua.execute('MechanizedDepotStockLane={} g_CargoWeightCapacityLabels={} g_LaunchMode="rocket"')
+        self.lua.execute('MechanizedDepotStockLane={row_size=5} g_CargoWeightCapacityLabels={} g_LaunchMode="rocket"')
         for path, name in native:
             self.lua.execute(method(path, name))
+        self.lua.execute('local pause_time=200\n' + method('Buildings/StorageDepot.lua', 'MechanizedDepot:Store'))
         self.lua.globals().all_items = self.lua.execute((args.mod / 'items.lua').read_text(encoding='utf-8'))
         self.lua.execute('option_items={} for i=2,#all_items do option_items[#option_items+1]=all_items[i] end')
         self.lua.execute(code)
         self.lua.execute('''
         classdefs={Workplace={properties={{id="max_workers",max=20}}}}
+        classdefs.MechanizedDepot=MechanizedDepot classdefs.MechanizedDepotStockLane=MechanizedDepotStockLane
         for _,k in ipairs({"Building","Drone","CargoShuttle","RCTransport","RCConstructorBase",
           "RCHarvester","RCTerraformer","Train","RCSafari","MapSharedDepot"}) do classdefs[k]={__parents={}} end
         for _,k in ipairs({"RocketBase","UniversalRocketBase"}) do classdefs[k]={GetMaxDrones=function() return 20 end} end
@@ -374,27 +408,109 @@ class CapacityTests(unittest.TestCase):
 
     def test_mechanized_native_lane_capacity(self):
         self.check('''
-        o=property({"MechanizedDepot"},"max_storage_per_resource",4000000)
-        o.stockpiled_amount=0 o.desired_amount=0 o.stockpiles={{supply_request=request(0),demand_request=request(50000)}}
-        o.stock_lanes={}
-        for i=1,3 do
-          local lane={n=10,row_size=5,max_rows=i==1 and 26 or 27,row_adjustment=i==1 and 0 or 1,stockpiled_amount=0}
-          lane.CalculateSearchOrder=MechanizedDepotStockLane.CalculateSearchOrder
-          lane.cubes={} for j=1,lane.n do lane.cubes[j]={count=0} end
-          lane.SetCount=function(s,n)
-            assert(n<=s.n*s.max_rows*s.row_size*1000) s.stockpiled_amount=n
-            local units=n/(s.row_size*1000)
-            for j=1,s.n do local length=Min(s.max_rows,units) s.cubes[j].count=length units=units-length end
+        o=warehouse() set_objects({o}) apply({Preset="2x"}) assert(o.max_storage_per_resource==7900000)
+        o:SetCount(7900000) assert(o.stockpiled_amount==7900000)
+        apply({Preset="Normal"}) assert(o.max_storage_per_resource==7900000)
+        o:SetCount(0) OnMsg.NewHour() assert(o.max_storage_per_resource==3950000)
+        assert(o.stock_lanes[1].max_rows==27 and o.stock_lanes[2].row_adjustment==0)
+        ''')
+
+    def test_mechanized_density_and_crane_geometry(self):
+        self.check('''
+        for _,factor in ipairs({1,2,3,5,10}) do
+          local o=warehouse() set_objects({o}) apply({Preset="Custom",MechanizedDepots=factor})
+          local capacity=o.max_storage_per_resource
+          for _,amount in ipairs({0,5000,10000,math.floor(capacity/10000)*5000,capacity}) do
+            o:SetCount(amount)
+            local total,visible=0,0
+            for i,lane in ipairs(o.stock_lanes) do
+              local rows=i==1 and 27 or 26
+              total=total+lane.stockpiled_amount
+              for _,row in ipairs(lane.cubes) do
+                assert(row.count<=rows,"Visible boxes extend beyond the native warehouse")
+                visible=visible+row.count
+              end
+              if lane.stockpiled_amount>0 then
+                o:CraneGoToStock(i,lane:CalculateLastCubesPos())
+                assert(o.crane_depth>=0 and o.crane_depth<=rows and o.crane_height>=0 and o.crane_height<10,"Crane leaves the native warehouse")
+              end
+              if lane.stockpiled_amount<lane.n*lane.max_rows*lane.row_size*1000 then
+                o:CraneGoToStock(i,lane:CalculateNextCubesPos())
+                assert(o.crane_depth>=0 and o.crane_depth<=rows,"First crane transfer leaves the native warehouse")
+              end
+            end
+            assert(total==amount and o.stockpiled_amount==amount)
+            assert(visible<=790 and (amount~=capacity or visible==790))
           end
-          o.stock_lanes[i]=lane
+          for amount=capacity-5000,0,-5000 do o:SetCount(amount) end
+          assert(o.stockpiled_amount==0 and not o:FindStockLaneToTakeFrom())
         end
-        o.FindStockLaneToGiveTo=MechanizedDepot.FindStockLaneToGiveTo
-        o.FindStockLaneToTakeFrom=MechanizedDepot.FindStockLaneToTakeFrom
-        set_objects({o}) apply({Preset="2x"}) assert(o.max_storage_per_resource==8000000)
-        MechanizedDepot.SetCount(o,8000000) assert(o.stockpiled_amount==8000000)
-        apply({Preset="Normal"}) assert(o.max_storage_per_resource==8000000)
-        MechanizedDepot.SetCount(o,0) OnMsg.NewHour() assert(o.max_storage_per_resource==4000000)
-        assert(o.stock_lanes[1].max_rows==26 and o.stock_lanes[2].row_adjustment==1)
+        ''')
+
+    def test_mechanized_native_transfers_removal_and_spoilage(self):
+        self.check('''
+        function Sleep() end
+        function PlayFX() end
+        function CreateGameTimeThread(fn,...) fn(...) return false end
+        for _,factor in ipairs({1,2,5,10}) do
+          local o=warehouse() set_objects({o}) apply({Preset="Custom",MechanizedDepots=factor})
+          o.resource="Metals" o.GetStoredAmount=MechanizedDepot.GetStoredAmount
+          local stock=o.stockpiles[1]
+          stock.supply={Metals=stock.supply_request}
+          stock.GetStoredAmount=function(s) return s.supply_request:GetActualAmount() end
+          stock.GetMax=function() return 50 end
+          stock.AddResourceAmount=function(s,amount)
+            s.supply_request=request(s.supply_request.actual+amount)
+            s.supply.Metals=s.supply_request
+            s.demand_request=request(50000-s.supply_request.actual)
+          end
+          o.GetPileStoredAmount=function() return stock:GetStoredAmount() end
+          o.UpdateStockpileAmounts=function(s,amount) stock:AddResourceAmount(amount-stock:GetStoredAmount()) end
+          o.CraneGoToIO=function() return false,0 end
+          o.CraneGoToCubes=function(s,x,y,z)
+            assert(y>=0 and y<=27 and z>=0 and z<10)
+            return false,0
+          end
+          o.beam={SetPos=function() end} o.hoist={}
+          o.SetHoistCubesVisible=function() end o.CenterHoist=function() end
+          o.HasPower=function() return true end o.TryStore=function() end
+          for _,fill in ipairs({0,math.floor(o.max_storage_per_resource/10000)*5000,o.max_storage_per_resource-5000}) do
+            o:SetCount(fill) o:UpdateStockpileAmounts(25000)
+            local before=o:GetStoredAmount()
+            MechanizedDepot.TryStore(o)
+            assert(o.stockpiled_amount==fill+5000 and stock:GetStoredAmount()==20000)
+            assert(o:GetStoredAmount()==before and not o.carrying)
+            MechanizedDepot.Store(o,-5000)
+            assert(o.stockpiled_amount==fill and stock:GetStoredAmount()==25000 and o:GetStoredAmount()==before)
+          end
+          o:SetCount(100000) o:UpdateStockpileAmounts(25000)
+          MechanizedDepot.AddResourceAmount(o,-35000,"Metals",true)
+          assert(o.stockpiled_amount==90000 and stock:GetStoredAmount()==0 and o:GetStoredAmount()==90000)
+          function CalcResourceSpoilage(obj,resource,amount,step) assert(step==5000) return 5000 end
+          MechanizedDepot.BuildingDailyUpdate(o)
+          assert(o:GetStoredAmount()==85000)
+        end
+        ''')
+
+    def test_mechanized_old_save_redraw_and_reduction(self):
+        self.lua.execute(method('Buildings/StorageDepot.lua', 'MechanizedDepotStockLane:SetCount').replace(
+            'MechanizedDepotStockLane:SetCount(', 'MechanizedDepotStockLane:LegacySetCount('))
+        self.check('''
+        local o=warehouse() set_objects({o}) apply({Preset="Custom",MechanizedDepots=2})
+        o:SetCount(o.max_storage_per_resource)
+        for _,lane in ipairs(o.stock_lanes) do lane:LegacySetCount(lane.stockpiled_amount) end
+        assert(o.stock_lanes[1].cubes[1].count>27)
+        for _,factor in ipairs({2,5,1}) do
+          apply({Preset="Custom",MechanizedDepots=factor})
+          OnMsg.PostLoadGame() flush()
+          local total=0
+          for i,lane in ipairs(o.stock_lanes) do
+            total=total+lane.stockpiled_amount
+            for _,row in ipairs(lane.cubes) do assert(row.count<=(i==1 and 27 or 26)) end
+          end
+          assert(total==7900000 and o.stockpiled_amount==7900000)
+        end
+        o:SetCount(0) OnMsg.NewHour() assert(o.max_storage_per_resource==3950000)
         ''')
 
     def test_native_housing_and_worker_reassignment(self):
