@@ -58,6 +58,13 @@ local function State(obj)
     return state
 end
 
+local function MechanizedVisualAmount(lane, amount)
+    local state = rawget(lane, "capacity_control_state")
+    if not state or not state.rows then return amount end
+    local step = lane.row_size * const.ResourceScale
+    return Min(state.rows * lane.n, math.ceil(amount * state.rows / (lane.max_rows * step))) * step
+end
+
 local function Scale(obj, prop, key, minimum)
     local base_prop = "base_" .. prop
     local modifiable = type(obj[base_prop]) == "number" and obj.SetBase
@@ -186,7 +193,7 @@ local function CargoKey(obj)
 end
 
 local function ApplyMechanized(obj)
-    -- Each native lane must have room for the advertised internal capacity.
+    -- Logical rows hold the full amount. Rendering and crane targets use native slots.
     local lanes = obj.stock_lanes
     if not lanes then return end
     local factor = Factor("MechanizedDepots")
@@ -199,6 +206,7 @@ local function ApplyMechanized(obj)
         if required > state.rows * factor then pending[obj] = true end
         lane.max_rows = rows
         lane.row_adjustment = rows - (state.rows - state.adjustment) * factor
+        lane:SetCount(lane.stockpiled_amount)
     end
     local minimum = obj.stockpiled_amount
     if IsValidThread(obj.is_storing) then
@@ -375,6 +383,48 @@ DefineClass.ColonyCapacityControlObject = {
 }
 
 function OnMsg.ClassesGenerate(classdefs)
+    local lane_class = classdefs.MechanizedDepotStockLane
+    local set_count = lane_class.SetCount
+    lane_class.SetCount = function(self, amount)
+        local state = rawget(self, "capacity_control_state")
+        if not state or not state.rows then return set_count(self, amount) end
+        local visual = MechanizedVisualAmount(self, amount)
+        local rows = self.max_rows
+        self.max_rows = state.rows
+        set_count(self, visual)
+        self.max_rows = rows
+        self.stockpiled_amount = amount
+    end
+    local search = lane_class.CalculateSearchOrder
+    lane_class.CalculateSearchOrder = function(self)
+        local state = rawget(self, "capacity_control_state")
+        if not state or not state.rows then return search(self) end
+        local total = 0
+        for _, count in ipairs(self:CalculateResourceCubeRows(self.stockpiled_amount)) do
+            total = total + Max(count - self.row_adjustment, 0)
+        end
+        return total
+    end
+    for _, entry in ipairs({{"CalculateNextCubesPos", 1}, {"CalculateLastCubesPos", 0}}) do
+        local original = lane_class[entry[1]]
+        lane_class[entry[1]] = function(self, ...)
+            local state = rawget(self, "capacity_control_state")
+            if not state or not state.rows then return original(self, ...) end
+            local amount = MechanizedVisualAmount(self, self.stockpiled_amount + entry[2] * self.row_size * const.ResourceScale)
+            local rows = self.max_rows
+            self.max_rows = state.rows
+            local hor, vert = self:CalculateResourceCubePos(amount)
+            self.max_rows = rows
+            return hor, vert
+        end
+    end
+    local crane = classdefs.MechanizedDepot.CraneGoToStock
+    classdefs.MechanizedDepot.CraneGoToStock = function(self, lane_idx, hor, vert)
+        local lane = self.stock_lanes[lane_idx]
+        local state = lane and rawget(lane, "capacity_control_state")
+        if not state or not state.rows then return crane(self, lane_idx, hor, vert) end
+        return self:CraneGoToCubes(lane.lane_pos, state.rows - hor, vert)
+    end
     for _, name in ipairs({"Building", "Drone", "CargoShuttle", "RCTransport", "RCConstructorBase",
         "RCHarvester", "RCTerraformer", "Train", "RCSafari", "MapSharedDepot"}) do
         table.insert_unique(classdefs[name].__parents, "ColonyCapacityControlObject")
