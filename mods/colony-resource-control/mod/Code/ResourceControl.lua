@@ -1,6 +1,7 @@
 local mode = "ColonyResourceControl"
 local title = Untranslated("Colony Resource Control")
 local last_amount = "100"
+local last_concrete_amount = "50"
 local ChooseResource
 local choice_popup
 
@@ -367,6 +368,7 @@ local function ClearGround(map, pos, radius)
         and map:IsPointInBounds(pos - point(radius, radius))
 end
 
+local concrete_footprint_amount = 50 * const.ResourceScale
 local function ConcreteRadius(map, resource, pos, amount)
     local info = TerrainDepositsInfo[resource]
     local seed = xxhash(map.name, pos)
@@ -426,7 +428,7 @@ function ColonyResourceControlMode:CanPlace(pos)
     local radius = 3 * guim
     if self.kind == "terrain" then
         if self.radius_pos ~= pos then
-            self.preview_radius = ConcreteRadius(map, self.resource, pos, self.amount * const.ResourceScale)
+            self.preview_radius = ConcreteRadius(map, self.resource, pos, concrete_footprint_amount)
             self.radius_pos = pos
         end
         if not self.preview_radius then return false end
@@ -469,8 +471,9 @@ function ColonyResourceControlMode:UpdatePreview()
     for i, position in ipairs(self.positions) do
         local center = position:SetZ(self.placement_map:GetHeight(position:x(), position:y()) + guic)
         if not self.markers[i] then
-            self.markers[i] = PlaceCircle(self.placement_map, center, self.preview_radius or 4 * guim,
-                valid and RGB(100, 220, 140) or RGB(240, 90, 80), false)
+            self.markers[i] = CreateCircleRangeMesh(radius,
+                valid and RGB(64, 255, 96) or RGB(255, 64, 64), false, true)
+            self.markers[i]:SetPos(center)
             self.markers[i]:ClearGameFlags(const.gofPermanent)
         else
             self.markers[i]:SetPos(center)
@@ -502,13 +505,18 @@ function ColonyResourceControlMode:Place()
     else
         local classes = { subsurface = "SubsurfaceDepositMarker", surface = "SurfaceDepositMarker", terrain = "TerrainDepositMarker" }
         local marker = PlaceObjectIn(classes[self.kind], self.placement_map, {
-            resource = self.resource, max_amount = remaining, grade = self.context.grade,
+            resource = self.resource, grade = self.context.grade,
+            max_amount = self.kind == "terrain" and concrete_footprint_amount or remaining,
             depth_layer = self.context.depth_layer, revealed = true, new_pos_if_obstruct = false, prefab = "",
         })
         marker:SetPos(self.positions[1])
         local _, _, obstructed = FindUnobstructedDepositPos(marker, true)
         if obstructed then DoneObject(marker) return end
         local deposit = marker:PlaceDeposit(true)
+        if IsValid(deposit) and self.kind == "terrain" then
+            deposit.max_amount = remaining
+            marker.max_amount = remaining
+        end
         if IsValid(deposit) and self.kind == "subsurface" then deposit:SetRevealed(true, "force") end
     end
 end
@@ -661,11 +669,12 @@ end
 
 local function ChooseAmount(context)
     local label = (context.kind == "remove" and "Remove " or "Add ") .. _InternalTranslate(Resources[context.resource].display_name)
-    CreateMarsRenameControl(nil, Untranslated(label), last_amount, function(text)
+    local default = context.kind == "terrain" and last_concrete_amount or last_amount
+    CreateMarsRenameControl(nil, Untranslated(label), default, function(text)
         local amount = tonumber(text)
         if not amount or amount < 1 or amount ~= math.floor(amount) then return end
         context.amount = amount
-        last_amount = text
+        if context.kind == "terrain" then last_concrete_amount = text else last_amount = text end
         DelayedCall(0, function()
             CreateRealTimeThread(function()
                 local interface = GetInGameInterface()

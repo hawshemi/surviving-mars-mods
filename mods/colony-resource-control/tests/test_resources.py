@@ -195,10 +195,9 @@ function PlaceObjectIn(name, map, props)
     elseif IsKindOf(obj, "SurfaceDeposit") then obj:Init() obj:CreateResourceRequests() end
     return obj
 end
-function PlaceCircle(map, pos, radius, color)
-    local marker = PlaceObjectIn("Object", map, {preview = true, radius = radius, color = color})
-    marker:SetPos(pos)
-    return marker
+function CreateCircleRangeMesh(radius, color, outer_glow, terrain_distortion)
+    assert(not outer_glow and terrain_distortion)
+    return PlaceObjectIn("Object", CurrentMap, {preview = true, radius = radius, color = color})
 end
 function new_map(environment)
     local map = {name = environment, environment = environment, objects = {}, mapdata = {OverviewOrientation = 0}}
@@ -341,6 +340,7 @@ lua.execute(method(game / 'Buildings/TerrainDeposit.lua', 'TerrainDeposit:GetAmo
 lua.execute(method(game / 'Buildings/TerrainDeposit.lua', 'TerrainDepositConcreteSetTerrainDig'))
 lua.execute(method(game / 'Buildings/TerrainDeposit.lua', 'TerrainDepositExtractor:GetDeposit'))
 lua.execute(method(game / 'Buildings/TerrainDeposit.lua', 'TerrainDepositExtractor:OnDepositDepleted'))
+lua.execute(method(game / 'Buildings/TerrainDeposit.lua', 'TerrainDepositExtractor:ExtractResource'))
 lua.execute(method(game / 'Buildings/SurfaceDeposit.lua', 'SurfaceDepositGroup:GetAmount'))
 resource_source = (args.game_source / 'Data/Resource.lua').read_text(encoding='utf-8')
 lua.execute('SurfaceDeposits = {} SurfaceDepositEntities = {} TerrainDeposits = {"Concrete"}')
@@ -508,7 +508,8 @@ for _, environment in ipairs({"Surface", "Underground", "Asteroid"}) do
         mode:Done()
     end
     for _, grade in ipairs(DepositGradesTable) do
-        for _, amount in ipairs({1, 100, 700, 2000}) do
+        local preview_radius, deposit_radius
+        for _, amount in ipairs({1, 50, 100, 700, 1000, 2000, 9999999}) do
             CurrentMap = new_map(environment) cursor = point(128000, 128000)
             local mode = new_mode({kind = "terrain", resource = "Concrete", amount = amount, grade = grade})
             mode:Place()
@@ -518,23 +519,40 @@ for _, environment in ipairs({"Surface", "Underground", "Asteroid"}) do
             assert(deposit:GetAmount() == amount * const.ResourceScale and deposit.grade == grade)
             assert(CurrentMap.terrain_writes == 1 and CurrentMap.last_terrain.pos:Dist2D(cursor) == 0)
             assert(deposit.radius_max > 0 and deposit.radius_max <= mode.preview_radius)
+            preview_radius = preview_radius or mode.preview_radius
+            deposit_radius = deposit_radius or deposit.radius_max
+            assert(mode.preview_radius == preview_radius and deposit.radius_max == deposit_radius,
+                "Concrete footprint changed with resource amount")
+            assert(deposit.marker.max_amount == amount * const.ResourceScale)
             assert(deposit.bbox and CurrentMap.City.sector.markers.surface[deposit.marker])
             assert(mode.markers[1].radius == mode.preview_radius)
             mode:Done()
         end
     end
 end
+CurrentMap = new_map("Surface") cursor = point(128000, 128000)
+local compact = new_mode({kind = "terrain", resource = "Concrete", amount = 1000, grade = "Average"})
+compact:Place()
+local deposit = objects(CurrentMap, "TerrainDeposit")[1]
+local extractor = PlaceObjectIn("TerrainDepositExtractor", CurrentMap, {
+    found_deposit = deposit, exploitation_resource = "Concrete",
+    GetResourceInfo = function() return TerrainDepositsInfo.Concrete end,
+    GetExtractionShape = function() return {{0, 0}} end,
+})
+assert(extractor:ExtractResource(const.ResourceScale) == const.ResourceScale)
+assert(deposit:GetAmount() == 999 * const.ResourceScale and deposit.max_amount == 1000 * const.ResourceScale)
+compact:Done()
 for _, obstruction in ipairs({"footprint", "border", "deposit", "empty_noise"}) do
     CurrentMap = new_map("Surface") cursor = point(128000, 128000)
     local mode = new_mode({kind = "terrain", resource = "Concrete", amount = 2000, grade = "Average"})
     if obstruction == "footprint" then
         CurrentMap.object_hex_grid.GetObject = function(self, q, r)
-            return q > 80 and q < 86 and r > 60 and r < 68
+            return q > 65 and q < 69 and r > 60 and r < 68
         end
-    elseif obstruction == "border" then cursor = point(20000, 20000)
+    elseif obstruction == "border" then cursor = point(5000, 5000)
     elseif obstruction == "deposit" then
         local deposit = PlaceObjectIn("TerrainDepositConcrete", CurrentMap, {radius_max = 30000})
-        deposit:SetPos(point(230000, 128000))
+        deposit:SetPos(point(165000, 128000))
     else CurrentMap.empty_noise = true end
     mode:Place()
     assert(not mode.valid, obstruction)
